@@ -3,11 +3,11 @@ These symbols will be simply parsed as tokens with corresponding content
 """
 
 #  braces
-LBRACE = "LBRACE"
-LBRACE_V = "{"
+LBRACKET = "LBRACKET"
+LBRACKET_V = "{"
 
-RBRACE = "RBRACE"
-RBRACE_V = "}"
+RBRACKET = "RBRACKET"
+RBRACKET_V = "}"
 
 LPAREN = "LPAREN"
 LPAREN_V = "("
@@ -49,11 +49,14 @@ MINUS_V = "-"
 ASTERIKS = "ASTERIKS"
 ASTERIKS_V = "*"
 
+DIVIDE = "DIVIDE"
+DIVIDE_V = "/"
+
 MOD = "MOD"
 MOD_V = "%"
 
-XOR = "XOR"
-XOR_V = "^"
+XOR_OP = "XOR_OP"
+XOR_OP_V = "^"
 
 INC_OP = "INC_OP"
 INC_OP_V = "++"
@@ -74,7 +77,7 @@ DIVIDE_ASSIGN = "DIVIDE_ASSIGN"
 DIVIDE_ASSIGN_V = "/="
 
 MOD_ASSIGN = "MOD_ASSIGN"
-MOD_ASSIGN_V = "%/"
+MOD_ASSIGN_V = "%="
 
 XOR_ASSIGN = "XOR_ASSIGN"
 XOR_ASSIGN_V = "^="
@@ -85,8 +88,32 @@ RIGHT_OP_V = ">>"
 LEFT_OP = "LEFT_OP"
 LEFT_OP_V = "<<"
 
+LOG_NOT = "LOG_NOT"
+LOG_NOT_V = "!"
+
+NOT_OP = "NOT_OP"
+NOT_OP_V = "~"
+
+AND_OP = "AND_OP"
+AND_OP_V = "&"
+
+OR_OP = "OR_OP"
+OR_OP_V = "|"
+
+QUESTION_MARK = "QUESTION_MARK"
+QUESTION_MARK_V = "?"
+
+COMMA = "COMMA"
+COMMA_V = ","
+
 
 #  comparison
+LESS = "LESS"
+LESS_V = "<"
+
+GREATER = "GREATER"
+GREATER_V = ">"
+
 LE_OP = "LE_OP"
 LE_OP_V = "<="
 
@@ -105,13 +132,3 @@ LOG_AND_V = "&&"
 LOG_OR = "LOG_OR"
 LOG_OR_V = "||"
 
-LOG_NOT = "LOG_NOT"
-LOG_NOT_V = "!"
-
-
-# arrows
-LARROW = "LARROW"
-LARROW_V = "<"
-
-RARROW = "RARROW"
-RARROW_V = ">"

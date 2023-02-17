@@ -53,11 +53,20 @@ DOUBLE_V = "double"
 CHAR = "CHAR"
 CHAR_V = "char"
 
+BOOL = "BOOL"
+BOOL_V = "bool"
+
 CONST = "CONST"
 CONST_V = "const"
 
 VOID = "VOID"
 VOID_V = "void"
+
+TRUE = "TRUE"
+TRUE_V = "true"
+
+FALSE = "FALSE"
+FALSE_V = "false"
 
 
 #  consts

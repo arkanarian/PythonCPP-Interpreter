@@ -6,10 +6,10 @@ import sys
 path = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.append(os.path.join(path))
 
-from lexical_analyzer.tokens import Token
+from lexical_analyzer.token import Token
 from lexical_analyzer.token_types import *
 import lexical_analyzer.token_types_simple as tokens_simple
-import lexical_analyzer.lexical_errors as errors
+import lexical_analyzer.errors as errors
 
 
 #  Reserved keywords
@@ -18,6 +18,9 @@ RESERVED_KEYWORDS = {
     FLOAT_V: Token(FLOAT, FLOAT_V),
     DOUBLE_V: Token(DOUBLE, DOUBLE_V),
     CHAR_V: Token(CHAR, CHAR_V),
+    BOOL_V: Token(BOOL, BOOL_V),
+    TRUE_V: Token(TRUE, TRUE_V),
+    FALSE_V: Token(FALSE, FALSE_V),
     VOID_V: Token(VOID, VOID_V),
     IF_V: Token(IF, IF_V),
     ELSE_V: Token(ELSE, ELSE_V),
@@ -51,13 +54,11 @@ class Lexer:
     Responsible for turning input string into set of Tokens
     """
 
-    def __init__(self):
-        path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../tests/test1.cpp"))
-        with open(path, 'r') as f:
-            self.code = f.read()
+    def __init__(self, code: str):
         self.pos = 0
         self.line_num = 1
         self.column_num = 0
+        self.code = code
         self.current_char: str = self.code[self.pos]
 
         vars_ = vars(tokens_simple)
@@ -160,7 +161,7 @@ class Lexer:
     def string(self) -> Token:
         """ Parsing string into Token
         Allows only double quote (")
-        :return: character string
+        :return: Token(STRING_CONST, value)
         """
         result = ''
 
@@ -178,7 +179,7 @@ class Lexer:
     def char(self) -> Token:
         """ Parsing char into Token
         Allows only single quote (')
-        :return: character string
+        :return: Token(CHAR_CONST, value)
         """
         self.move()
         result = self.current_char
