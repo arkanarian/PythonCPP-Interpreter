@@ -1,13 +1,12 @@
-**program**                 : (imports)* (statement)* main_function (statement)*
+**program**                 : (imports_using | imports_include | declaration_list)* main_function (declaration_list)*
 
-**imports**                 : USING NAMESPACE variable SEMI
-                            | HASH INCLUDE LESS variable GRATER
-                            | empty
+**imports_using**            : USING NAMESPACE variable SEMI
+
+**imports_include**          : HASH INCLUDE LESS variable GRATER
     
-**main_function**           : INTEGER MAIN compound_statement
+**main_function**           : INTEGER variable compound_statement
 
 **statement**               : assign_statement
-                            | declaration_statement
                             | compound_statement
                             | if_statement
                             | loop_statement
@@ -16,29 +15,27 @@
                             | print_statement
                             | empty
 
-**compound_statement**      : LBRACKET statement* RBRACKET
+**compound_statement**      : LBRACKET (declaration_list | statement)* RBRACKET
 
-**jump_statement**          : RETURN expression? SEMICOLON
-                            | BREAK SEMICOLON
-                            | CONTINUE SEMICOLON
+**jump_statement**          : RETURN expression? SEMI
+                            | BREAK SEMI
+                            | CONTINUE SEMI
 
 **if_statement**            : IF LPAREN expr RPAREN statement_list (ELSE statement_list)?
 
 **switch_statement**        : 
 
 **loop_statement**          : WHILE LPAREN expr RPAREN statement_list
-                            | DO statement_list WHILE LPAREN expr RPAREN SEMICOLON
+                            | DO statement_list WHILE LPAREN expr RPAREN SEMI
                             | FOR LPAREN expr_statement expr_statement (expr)? RPAREN statement_list
 
-**assign_statement**        : variable (ASSIGN | PLUS_ASSIGN | MINUS_ASSIGN | MUL_ASSIGN | DIVIDE_ASSIGN | MOD_ASSIGN | XOR_ASSIGN) expr SEMICOLON
+**assign_statement**        : variable (ASSIGN | PLUS_ASSIGN | MINUS_ASSIGN | MUL_ASSIGN | DIVIDE_ASSIGN | MOD_ASSIGN | XOR_ASSIGN) expr SEMI
 
-**declaration_statement**   : type_spec declaration_list SEMI
+**declaration_list**        : type_spec declaration (COMMA declaration)* SEMI
 
-**declaration_list**        : declaration (COMMA declaration)*
+**declaration**             : variable (ASSIGN expr)*
 
-**declaration**             : variable (ASSIGN expr)?
-
-**print_statement**         : COUT (LEFT_OP expr)*
+**print_statement**         : COUT LEFT_OP_COUT expr (LEFT_OP_COUT expr)* SEMI
 
 **expr**                    : ternary_operator
 

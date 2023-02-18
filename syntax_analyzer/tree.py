@@ -1,4 +1,4 @@
-from typing import Sequence, Union, TypeVar
+from typing import Sequence, Union, TypeVar, Optional
 
 from lexical_analyzer.token import Token
 
@@ -61,18 +61,19 @@ class Bool(AST):
 
 class Compound(AST):
     def __init__(self):
-        self.statements = []
+        self.children = []
 
 
 class MainFunction(AST):
-    def __init__(self, compound_statement: Compound):
+    def __init__(self, compound_statement: Compound, name_node):
+        self.name_node = name_node
         self.compound_statement = compound_statement
 
 
-class Import(AST):
-    def __init__(self, includes: Sequence[Variable], usings: Sequence[Variable]):
-        self.include_nodes = includes
-        self.using_nodes = usings
+class Imports(AST):
+    def __init__(self):
+        self.include_nodes = []
+        self.using_nodes = []
 
 
 class NoOp(AST):
@@ -92,6 +93,17 @@ class Assign(AST):
         self.right = right
 
 
+class VarDecl(AST):
+    def __init__(self, var_node: Variable, type_node: Type):
+        self.var_node = var_node
+        self.type_node = type_node
+
+
+class Print(AST):
+    def __init__(self):
+        self.children = []
+
+
 class TernaryOp(AST):
     def __init__(self, condition, first_expr, second_expr):
         self.condition = condition
@@ -100,8 +112,8 @@ class TernaryOp(AST):
 
 
 class Program(AST):
-    def __init__(self, imports: Sequence[Import], statements_before: Sequence[ASTNode], main_func: MainFunction, statements_after: Sequence[ASTNode]):
+    def __init__(self, imports: Imports, declarations_before: Sequence[ASTNode], main_function: MainFunction, declarations_after: Sequence[ASTNode]):
         self.imports_node = imports
-        self.statements_before = statements_before
-        self.main_func = main_func
-        self.statements_after = statements_after
+        self.declarations_before = declarations_before
+        self.main_function = main_function
+        self.declarations_after = declarations_after

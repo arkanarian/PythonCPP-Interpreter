@@ -1,4 +1,4 @@
-from typing import Optional, TypeVar
+from typing import Optional, TypeVar, List
 
 from lexical_analyzer.lexer import Lexer
 from lexical_analyzer.token_types import *
@@ -39,53 +39,65 @@ class Parser:
     @buffer
     def is_main(self):
         self.eat(self.current_token.type)
-        return self.current_token.type == MAIN
+        if self.current_token.type != ID:
+            return False
+        self.eat(ID)
+        return self.current_token.type == LPAREN
+
+    # @buffer
+    # def is_string(self):
+    #     if self.current_token.type != ID and self.current_token.value != CONST_V:
+    #         return False
+    #     self.eat(ID)
+    #     if self.current_token.type != ID and self.current_token.value != CHAR_V:
+    #         return False
+    #     self.eat(ID)
+    #     return self.current_token.type == ASTERIKS
 
     def program(self) -> Program:
         """ program : (imports | main_function | statement)* """
-        statements_before = []
-        statements_after = []
-        imports = []
-        while self.current_token.type in [USING, HASH]:
-            imports.append(self.imports())
+        declarations_before = []
+        declarations_after = []
+        imports_node = Imports()
+        while self.current_token.type in [USING, INCLUDE, INTEGER, FLOAT, DOUBLE, CHAR, STRING, BOOL] and not self.is_main():
+            if self.current_token.type == USING:
+                imports_node.using_nodes.append(self.imports_using())
+            elif self.current_token.type == INCLUDE:
+                imports_node.include_nodes.append(self.imports_include())
+            else:
+                declarations_before.extend(self.declaration_list())
+        print(declarations_before)
 
-        while self.current_token.type in [INTEGER, FLOAT, DOUBLE, CHAR, BOOL] and not self.is_main():
-            statements_before.append(self.statement())
-        print(statements_before)
-
+        main_function = None
         if self.is_main():
             main_function = self.main_function()
 
-        while self.current_token.type in [INTEGER, FLOAT, DOUBLE, CHAR, BOOL]:
-            statements_after.append(self.statement())
+        while self.current_token.type in [INTEGER, FLOAT, DOUBLE, CHAR, STRING, BOOL]:
+            declarations_after.extend(self.declaration_list())
 
-        return Program(imports=imports, statements_before=statements_before)
+        return Program(imports=imports_node, declarations_before=declarations_before, main_function=main_function, declarations_after=declarations_after)
 
-    def imports(self):
-        if self.current_token.type == USING:
-            self.eat(USING)
-            self.eat(NAMESPACE)
-            name = self.variable()
-            self.eat(SEMI)
-            return name
+    def imports_using(self):
+        self.eat(USING)
+        self.eat(NAMESPACE)
+        token = self.variable()
+        self.eat(SEMI)
+        return token
 
-        elif self.current_token.type == HASH:
-            self.eat(HASH)
-            self.eat(INCLUDE)
-            self.eat(LESS)
-            name = self.variable()
-            self.eat(GREATER)
-            return name
-
-        else:
-            self.empty()
+    def imports_include(self):
+        self.eat(INCLUDE)
+        self.eat(LESS)
+        token = self.variable()
+        self.eat(GREATER)
+        return token
 
     def main_function(self) -> MainFunction:
         self.eat(INTEGER)
-        self.eat(MAIN)
+        name_node = self.variable()
+        self.eat(LPAREN)
+        self.eat(RPAREN)
         compound_statement = self.compound_statement()
-        return MainFunction()
-
+        return MainFunction(compound_statement=compound_statement, name_node=name_node)
 
     def statement(self) -> ASTNode:
         """
@@ -101,8 +113,6 @@ class Parser:
         """
         if self.current_token.type == ID:
             node = self.assign_statement()
-        elif self.current_token.type in [INTEGER, FLOAT, DOUBLE, CHAR, BOOL]:
-            node = self.declaration_statement()
         elif self.current_token.type == IF:
             node = self.if_statement()
         elif self.current_token.type == LBRACKET:
@@ -120,15 +130,18 @@ class Parser:
         return node
 
     def compound_statement(self) -> Compound:
-        """**compound_statement**      : LBRACKET statement* RBRACKET"""
-        statement_list = []
-        self.eat(LBRACKET)
-        while self.current_token.type is not RBRACKET:
-            statement_list.append(self.statement())
-        self.eat(RBRACKET)
+        """ compound_statement      : LBRACKET statement* RBRACKET """
+        result = []
         compound = Compound()
-        for statement in statement_list:
-            compound.children.append(self.statement())
+        self.eat(LBRACKET)
+        while self.current_token.type != RBRACKET:
+            if self.current_token.type in [INTEGER, FLOAT, DOUBLE, CHAR, STRING, BOOL]:
+                result.extend(self.declaration_list())
+            else:
+                result.append(self.statement())
+        self.eat(RBRACKET)
+        for child in result:
+            compound.children.append(child)
         return compound
 
     def jump_statement(self):
@@ -164,23 +177,52 @@ class Parser:
         self.eat(SEMI)
         return Assign(left=left, op=op, right=right)
 
-    def declaration_statement(self):
+    def declaration_list(self) -> List[Union[VarDecl, Assign]]:
+        """ declaration_list        : type_spec declaration (COMMA declaration)* SEMI """
+        result = []
         type_node = self.type_spec()
-        var_nodes = [self.variable()]
+        result.extend(self.declaration())
         while self.current_token.type == COMMA:
             self.eat(COMMA)
-            var_nodes.append(self.variable())
-            
-        declaration_list = self.declaration_list()
+            result.extend(self.declaration())
+        self.eat(SEMI)
 
-    def declaration_list(self):
-        pass
+        # ФИЧА: преобразуем List[Union[Assign, Variable]] в List[Union[VarDecl, Assign]]
+        # используя type_node при замене VarDecl
+        return_result = []
+        for node in result:
+            if isinstance(node, Variable):
+                return_result.append(VarDecl(type_node=type_node, var_node=node))
+            else:
+                return_result.append(node)
 
-    def declaration(self):
-        pass
+        return return_result
+
+    def declaration(self) -> List[Union[Variable, Assign]]:
+        """ declaration             : variable (ASSIGN expr)? """
+        result = []
+        var_node = self.variable()
+        result.append(var_node)
+        if self.current_token.type == ASSIGN:
+            token = self.current_token
+            self.eat(token.type)
+            expr = self.expr()
+            result.append(Assign(left=var_node, op=token, right=expr))
+        return result
 
     def print_statement(self):
-        pass
+        result = []
+        print_node = Print()
+        self.eat(COUT)
+        self.eat(LEFT_OP_COUT)
+        result.append(self.expr())
+        while self.current_token.type == LEFT_OP_COUT:
+            self.eat(LEFT_OP_COUT)
+            result.append(self.expr())
+        self.eat(SEMI)
+        [print_node.children.append(node) for node in result]
+        return print_node
+
 
     def expr(self) -> TernaryOp:
         node = self.ternary_operator()
@@ -280,14 +322,14 @@ class Parser:
     def check_cast_expression_pre(self):
         if self.current_token.type == LPAREN:
             self.eat(LPAREN)
-            if self.current_token.type in [INTEGER, DOUBLE, FLOAT, CHAR]:
+            if self.current_token.type in [INTEGER, DOUBLE, FLOAT, CHAR, STRING, BOOL]:
                 self.eat(self.current_token.type)
                 return self.current_token.type == RPAREN
         return False
 
     @buffer
     def check_cast_expression_post(self):
-        if self.current_token.type in [INTEGER, DOUBLE, FLOAT, CHAR]:
+        if self.current_token.type in [INTEGER, DOUBLE, FLOAT, CHAR, STRING, BOOL]:
             self.eat(self.current_token.type)
             return self.current_token.type == LPAREN
         return False
@@ -343,9 +385,9 @@ class Parser:
 
     def type_spec(self) -> Type:
         token = self.current_token
-        if token.type in [INTEGER, FLOAT, DOUBLE, CHAR, BOOL]:
+        if token.type in [INTEGER, FLOAT, DOUBLE, CHAR, STRING, BOOL]:
             self.eat(token.type)
-            return Type(token.type)
+            return Type(token)
 
     def empty(self) -> None:
         pass

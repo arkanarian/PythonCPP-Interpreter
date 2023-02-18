@@ -3,7 +3,7 @@ MAIN = "MAIN"
 MAIN_V = "main()"
 
 INCLUDE = "INCLUDE"
-INCLUDE_V = "include"
+INCLUDE_V = "#include"
 
 NAMESPACE = "NAMESPACE"
 NAMESPACE_V = "namespace"
@@ -14,11 +14,12 @@ USING_V = "using"
 RETURN = "RETURN"
 RETURN_V = "return"
 
-ENDL = "ENDL"
 ENDL_V = "endl"
 
 COUT = "COUT"
 COUT_V = "cout"
+
+LEFT_OP_COUT = "LEFT_OP_COUT"
 
 EOF = "EOF"
 
@@ -52,6 +53,9 @@ DOUBLE_V = "double"
 
 CHAR = "CHAR"
 CHAR_V = "char"
+
+STRING = "STRING"
+STRING_V = "const char *".split()
 
 BOOL = "BOOL"
 BOOL_V = "bool"

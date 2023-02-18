@@ -3,6 +3,9 @@ import os
 
 import os
 import sys
+
+from utils.utils import buffer
+
 path = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.append(os.path.join(path))
 
@@ -18,6 +21,7 @@ RESERVED_KEYWORDS = {
     FLOAT_V: Token(FLOAT, FLOAT_V),
     DOUBLE_V: Token(DOUBLE, DOUBLE_V),
     CHAR_V: Token(CHAR, CHAR_V),
+    " ".join(STRING_V): Token(STRING, " ".join(STRING_V)),
     BOOL_V: Token(BOOL, BOOL_V),
     TRUE_V: Token(TRUE, TRUE_V),
     FALSE_V: Token(FALSE, FALSE_V),
@@ -36,7 +40,6 @@ RESERVED_KEYWORDS = {
     MAIN_V: Token(MAIN, MAIN_V),
     USING_V: Token(USING, USING_V),
     NAMESPACE_V: Token(NAMESPACE, NAMESPACE_V),
-    ENDL_V: Token(ENDL, ENDL_V),
     COUT_V: Token(COUT, COUT_V),
 }
 
@@ -60,6 +63,7 @@ class Lexer:
         self.column_num = 0
         self.code = code
         self.current_char: str = self.code[self.pos]
+        self.is_cout_line = False
 
         vars_ = vars(tokens_simple)
         tokens = {k: v for k, v in vars_.items() if not k.startswith('__')}.items()
@@ -81,13 +85,25 @@ class Lexer:
                 self.column_num = 1
             self.current_char = self.code[self.pos]
 
-    def peek(self) -> Union[str, None]:
+    def peek(self, steps: int = 1) -> Union[str, None]:
         """ Check next character without moving pointer"""
-        peek_pos = self.pos + 1
+        peek_pos = self.pos + steps
         if peek_pos > len(self.code) - 1:
             return None
         else:
             return self.code[peek_pos]
+
+    @buffer
+    def is_string(self):
+        token1 = self.get_next_token()
+        token2 = self.get_next_token()
+        return True if token1.type == CHAR and token2.type == tokens_simple.ASTERIKS else False
+
+    @buffer
+    def is_include(self):
+        self.move()
+        token = self._id()
+        return True if token.value == "include" else False
 
     def _id(self) -> Token:
         """ Handle identifiers and reserved keywords """
@@ -95,8 +111,18 @@ class Lexer:
         while self.current_char is not None and self.current_char.isalnum() or self.current_char == '_':
             result += self.current_char
             self.move()
+        # handle 'const char *' pattern
+        if result == STRING_V[0] and self.is_string():
+            token1 = self.get_next_token()
+            token2 = self.get_next_token()
+            result = " ".join(STRING_V)
 
         token = RESERVED_KEYWORDS.get(result, Token(ID, result))
+
+        # handle left operations '<<' as cout operations when current line is cout-line
+        if token.value == COUT_V:
+            self.is_cout_line = True
+
         return token
 
     def skip_whitespaces(self) -> None:
@@ -195,6 +221,7 @@ class Lexer:
         """ Symbols here will be simply handled as tokens with corresponding content
         No additional behavior is executed
         """
+        # ФИЧА
         for name in self.token_names:
             val = self.token_values.get(name + "_V")
             if len(val) == 1:
@@ -228,6 +255,11 @@ class Lexer:
                 self.skip_multiline_comment()
                 continue
 
+            if self.current_char == tokens_simple.HASH_V and self.is_include():
+                self.move()
+                self._id()
+                return RESERVED_KEYWORDS.get(INCLUDE_V)
+
             if self.current_char.isalpha():
                 return self._id()
 
@@ -239,6 +271,19 @@ class Lexer:
 
             if self.current_char == SINGLE_QUOTE_V:
                 return self.char()
+
+            if self.current_char == tokens_simple.LEFT_OP_V[0] and self.peek() == tokens_simple.LEFT_OP_V[1]:
+                self.move()
+                self.move()
+                if self.is_cout_line:
+                    return Token(LEFT_OP_COUT, tokens_simple.LEFT_OP_V)
+                else:
+                    return Token(tokens_simple.LEFT_OP, tokens_simple.LEFT_OP_V)
+
+            if self.current_char == tokens_simple.SEMI_V:
+                self.is_cout_line = False
+                self.move()
+                return Token(tokens_simple.SEMI, tokens_simple.SEMI_V)
 
             token = self.simple_token()
             if token is None:
