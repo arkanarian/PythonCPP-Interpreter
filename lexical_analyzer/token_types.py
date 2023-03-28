@@ -3,10 +3,13 @@ MAIN = "MAIN"
 MAIN_V = "main()"
 
 INCLUDE = "INCLUDE"
-INCLUDE_V = "include"
+INCLUDE_V = "#include"
 
 NAMESPACE = "NAMESPACE"
 NAMESPACE_V = "namespace"
+
+DEFAULT = "DEFAULT"
+DEFAULT_V = "default"
 
 USING = "USING"
 USING_V = "using"
@@ -14,11 +17,12 @@ USING_V = "using"
 RETURN = "RETURN"
 RETURN_V = "return"
 
-ENDL = "ENDL"
 ENDL_V = "endl"
 
 COUT = "COUT"
 COUT_V = "cout"
+
+LEFT_OP_COUT = "LEFT_OP_COUT"
 
 EOF = "EOF"
 
@@ -53,11 +57,23 @@ DOUBLE_V = "double"
 CHAR = "CHAR"
 CHAR_V = "char"
 
+STRING = "STRING"
+STRING_V = "const char *".split()
+
+BOOL = "BOOL"
+BOOL_V = "bool"
+
 CONST = "CONST"
 CONST_V = "const"
 
 VOID = "VOID"
 VOID_V = "void"
+
+TRUE = "TRUE"
+TRUE_V = "true"
+
+FALSE = "FALSE"
+FALSE_V = "false"
 
 
 #  consts
@@ -86,7 +102,7 @@ CASE = "CASE"
 CASE_V = "case"
 
 FOR = "FOR"
-FOR_V = "else"
+FOR_V = "for"
 
 WHILE = "WHILE"
 WHILE_V = "while"

@@ -81,6 +81,7 @@ char ch = ' \'' // no error
 float a = -2.0
 float a = 0.0000234
 float a = -0.22E-5
+float a = -0.22f
 double a = 45E12    // 45E12 is equal to 45*10^12
 
 
