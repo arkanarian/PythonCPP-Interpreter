@@ -1,8 +1,9 @@
+
 **program**                 : (imports_using | imports_include | declaration_list)* main_function (declaration_list)*
 
-**imports_using**            : USING NAMESPACE variable SEMI
+**imports_using**           : USING NAMESPACE variable SEMI
 
-**imports_include**          : HASH INCLUDE LESS variable GRATER
+**imports_include**         : HASH INCLUDE LESS variable GRATER
     
 **main_function**           : INTEGER variable compound_statement
 
@@ -13,29 +14,45 @@
                             | jump_statement
                             | switch_statement
                             | print_statement
+                            | expr_statement
                             | empty
 
 **compound_statement**      : LBRACKET (declaration_list | statement)* RBRACKET
 
 **jump_statement**          : RETURN expression? SEMI
-                            | BREAK SEMI
+                            | BREAK SEMI    
                             | CONTINUE SEMI
 
-**if_statement**            : IF LPAREN expr RPAREN statement_list (ELSE statement_list)?
+**if_statement**            : IF LPAREN expr RPAREN statement (ELSE statement)?
 
-**switch_statement**        : 
+**switch_statement**        : SWITCH LPAREN expr RPAREN LBRACKET case_statement* (default_statement)? RBRACKET
 
-**loop_statement**          : WHILE LPAREN expr RPAREN statement_list
-                            | DO statement_list WHILE LPAREN expr RPAREN SEMI
-                            | FOR LPAREN expr_statement expr_statement (expr)? RPAREN statement_list
+**switch_compound**         : CASE (constant | variable) COLON statement
+
+**default_statement**       : DEFAULT COLON statement
+
+**loop_statement**          : WHILE LPAREN expr RPAREN statement
+                            | DO statement WHILE LPAREN expr RPAREN SEMI
+                            | FOR LPAREN expr_statement expr_statement (empty RPAREN) | (expr RPAREN) statement
+
+**init_loop_statement**     : declaration_list | assign_statement | empty
+
+**condition_loop_statement**: factor (EQUAL | NOT_EQUAL | LESS | GRATER | LE_OP | GE_OP) factor | empty
+
+**inc_loop_statement**      : (DEC_OP | INC_OP) variable
+                            | variable (INC_OP | DEC_OP)
+                            | variable
+                            | assign_statement
 
 **assign_statement**        : variable (ASSIGN | PLUS_ASSIGN | MINUS_ASSIGN | MUL_ASSIGN | DIVIDE_ASSIGN | MOD_ASSIGN | XOR_ASSIGN) expr SEMI
 
 **declaration_list**        : type_spec declaration (COMMA declaration)* SEMI
 
-**declaration**             : variable (ASSIGN expr)*
+**declaration**             : variable (ASSIGN expr)?
 
 **print_statement**         : COUT LEFT_OP_COUT expr (LEFT_OP_COUT expr)* SEMI
+
+**expr_statement**          : expr SEMI
 
 **expr**                    : ternary_operator
 
@@ -65,22 +82,28 @@
                             | type_spec LPAREN cast_operator RPAREN
                             | unary_operator
 
-**unary_operator**          : INC_OP postfix_operator
-                            | DEC_OP postfix_operator
-                            | PLUS cast_expression
-                            | MINUS cast_expression
-                            | LOG_NOT cast_expression
-                            | NOT_OP cast_expression
-                            | AND_OP cast_expression
+**unary_operator**          : INC_OP prefix_operator
+                            | DEC_OP prefix_operator
+                            | PLUS cast_operator
+                            | MINUS cast_operator
+                            | LOG_NOT cast_operator
+                            | NOT_OP cast_operator
+                            | AND_OP cast_operator
                             | postfix_operator
 
-**postfix_operator**        : factor (INC_OP | DEC_OP)?
+**prefix_operator_rep**     : INC_OP prefix_operator_rep
+                            | DEC_OP prefix_operator_rep
+                            | variable
 
-**factor**                  : variable
-                            | LPAREN expr RPAREN
+**postfix_operator_rep**    : postfix_operator_rep INC_OP 
+                            | postfix_operator_rep DEC_OP
+                            | variable
+
+**factor**                  : LPAREN expr RPAREN
                             | constant
+                            | variable
 
-**constant**                : INT_CONST
+**constant**                : INTEGER_CONST
                             | FLOAT_CONST
                             | CHAR_CONST
                             | STRING_CONST
@@ -89,6 +112,6 @@
 
 **type_spec**               : INTEGER | FLOAT | DOUBLE | CHAR | BOOL
 
-**empty**                   :
-
 **variable**                : ID
+
+**empty**                   :

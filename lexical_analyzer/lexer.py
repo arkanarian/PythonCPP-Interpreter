@@ -30,6 +30,7 @@ RESERVED_KEYWORDS = {
     ELSE_V: Token(ELSE, ELSE_V),
     SWITCH_V: Token(SWITCH, SWITCH_V),
     CASE_V: Token(CASE, CASE_V),
+    DEFAULT_V: Token(DEFAULT, DEFAULT_V),
     FOR_V: Token(FOR, FOR_V),
     WHILE_V: Token(WHILE, WHILE_V),
     DO_V: Token(DO, DO_V),
@@ -86,7 +87,7 @@ class Lexer:
             self.current_char = self.code[self.pos]
 
     def peek(self, steps: int = 1) -> Union[str, None]:
-        """ Check next character without moving pointer"""
+        """ Check next character without moving pointer """
         peek_pos = self.pos + steps
         if peek_pos > len(self.code) - 1:
             return None
@@ -111,6 +112,7 @@ class Lexer:
         while self.current_char is not None and self.current_char.isalnum() or self.current_char == '_':
             result += self.current_char
             self.move()
+
         # handle 'const char *' pattern
         if result == STRING_V[0] and self.is_string():
             token1 = self.get_next_token()
@@ -177,7 +179,7 @@ class Lexer:
                 while self.current_char is not None and self.current_char.isdigit():
                     result += self.current_char
                     self.move()
-            elif self.current_char == 'f':
+            elif self.current_char == 'f' and self.current_char == 'd':
                 self.move()
             token = Token(FLOAT_CONST, float(result))
         else:
@@ -287,7 +289,7 @@ class Lexer:
 
             token = self.simple_token()
             if token is None:
-                self.error()
+                self.error(f"No such token '{self.current_char}'")
             return token
 
         return Token(EOF, None)

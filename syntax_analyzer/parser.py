@@ -28,13 +28,13 @@ class Parser:
         self.current_token: Optional[Token] = self.lexer.get_next_token()
 
     def error(self, message):
-        raise SyntaxError(0, 0, message)
+        raise SyntaxError(self.lexer.line_num, self.lexer.column_num-1, message)
 
     def eat(self, token_type: str) -> None:
         if self.current_token.type == token_type:
             self.current_token = self.lexer.get_next_token()
         else:
-            self.error(errors.NOT_EXPECTED_TOKEN(token_type, self.current_token.type, self.lexer.line_num, self.lexer.column_num))
+            self.error(errors.NOT_EXPECTED_TOKEN(token_type, self.current_token.type))
 
     @buffer
     def is_main(self):
@@ -43,16 +43,6 @@ class Parser:
             return False
         self.eat(ID)
         return self.current_token.type == LPAREN
-
-    # @buffer
-    # def is_string(self):
-    #     if self.current_token.type != ID and self.current_token.value != CONST_V:
-    #         return False
-    #     self.eat(ID)
-    #     if self.current_token.type != ID and self.current_token.value != CHAR_V:
-    #         return False
-    #     self.eat(ID)
-    #     return self.current_token.type == ASTERIKS
 
     def program(self) -> Program:
         """ program : (imports | main_function | statement)* """
@@ -66,7 +56,6 @@ class Parser:
                 imports_node.include_nodes.append(self.imports_include())
             else:
                 declarations_before.extend(self.declaration_list())
-        print(declarations_before)
 
         main_function = None
         if self.is_main():
@@ -102,18 +91,18 @@ class Parser:
     def statement(self) -> ASTNode:
         """
         **statement**               : assign_statement
-                            | declaration_statement
-                            | compound_statement
-                            | if_statement
-                            | loop_statement
-                            | jump_statement
-                            | switch_statement
-                            | print_statement
-                            | empty
+                                    | declaration_statement
+                                    | compound_statement
+                                    | if_statement
+                                    | loop_statement
+                                    | jump_statement
+                                    | switch_statement
+                                    | print_statement
+                                    | empty
         """
-        if self.current_token.type == ID:
-            node = self.assign_statement()
-        elif self.current_token.type == IF:
+        # if self.current_token.type == ID:
+        #     node = self.assign_statement()
+        if self.current_token.type == IF:
             node = self.if_statement()
         elif self.current_token.type == LBRACKET:
             node = self.compound_statement()
@@ -126,7 +115,7 @@ class Parser:
         elif self.current_token.type == COUT:
             node = self.print_statement()
         else:
-            node = self.empty()
+            node = self.expr_statement()
         return node
 
     def compound_statement(self) -> Compound:
@@ -145,16 +134,136 @@ class Parser:
         return compound
 
     def jump_statement(self):
-        pass
+        if self.current_token.type == RETURN:
+            self.eat(RETURN)
+            expr = self.empty()
+            if self.current_token.type != SEMI:
+                expr = self.expr()
+            self.eat(SEMI)
+            return ReturnStatement(expr=expr)
+        elif self.current_token.type == BREAK:
+            self.eat(BREAK)
+            self.eat(SEMI)
+            return BreakStatement()
+        elif self.current_token.type == CONTINUE:
+            self.eat(CONTINUE)
+            self.eat(SEMI)
+            return ContinueStatement()
 
     def if_statement(self):
-        pass
+        self.eat(IF)
+        self.eat(LPAREN)
+        condition = self.expr()
+        self.eat(RPAREN)
+        if_body = self.statement()
+        else_body = self.empty()
+        if self.current_token.type == ELSE:
+            self.eat(ELSE)
+            else_body = self.statement()
+        return ConditionStatement(condition=condition, if_body=if_body, else_body=else_body)
 
     def switch_statement(self):
-        pass
+        self.eat(SWITCH)
+        self.eat(LPAREN)
+        condition = self.expr()
+        self.eat(RPAREN)
+        self.eat(LBRACKET)
+        case_statements = []
+        default_statement = self.empty()
+        while self.current_token.type == CASE:
+            case_statements.append(self.case_statement())
+        if self.current_token.type == DEFAULT:
+            default_statement = self.default_statement()
+        self.eat(RBRACKET)
+        return SwitchStatement(condition=condition, case_statements=case_statements, default_statement=default_statement)
+
+    def case_statement(self):
+        self.eat(CASE)
+        condition = self.empty()
+        if self.current_token.type == ID:
+            condition = self.variable()
+        else:
+            condition = self.constant()
+        self.eat(COLON)
+        body = self.statement()
+        return SwitchCompound(condition=condition, body=body)
+
+    def default_statement(self):
+        self.eat(DEFAULT)
+        self.eat(COLON)
+        body = self.statement()
+        return SwitchCompound(condition=self.empty(), body=body)
 
     def loop_statement(self):
-        pass
+        if self.current_token.type == WHILE:
+            self.eat(WHILE)
+            self.eat(LPAREN)
+            condition = self.expr()
+            self.eat(RPAREN)
+            body = self.statement()
+            return WhileStatement(condition=condition, body=body)
+        elif self.current_token.type == DO:
+            self.eat(DO)
+            body = self.statement()
+            self.eat(WHILE)
+            self.eat(LPAREN)
+            condition = self.expr()
+            self.eat(RPAREN)
+            self.eat(SEMI)
+            return DoWhileStatement(condition=condition, body=body)
+        else:
+            self.eat(FOR)
+            self.eat(LPAREN)
+            print(self.current_token.type)
+            if self.current_token.type in [INTEGER, FLOAT, CHAR, STRING, BOOL]:
+                init = self.declaration_list()[0]
+            else:
+                init = self.expr_statement()
+            condition = self.expr_statement()
+            if self.current_token.type == RPAREN:
+                action = self.empty()
+            else:
+                action = self.expr()
+            self.eat(RPAREN)
+            body = self.statement()
+            return ForStatement(init=init, condition=condition, action=action, body=body)
+
+    # def init_loop_statement(self):
+    #     node = self.empty()
+    #     if self.current_token.type != SEMI:
+    #         if self.current_token.type in [INTEGER, FLOAT, CHAR, STRING]:
+    #             node = self.declaration_list()
+    #         elif self.current_token.type == ID:
+    #             node = self.assign_statement()
+    #     self.eat(SEMI)
+    #     return node
+    #
+    # def condition_loop_statement(self):
+    #     node = self.empty()
+    #     if self.current_token.type != SEMI:
+    #         left = self.factor()
+    #         if self.current_token.type in [EQUAL, NOT_EQUAL, LESS, GREATER, LE_OP, GE_OP]:
+    #             op = self.current_token
+    #             self.eat(self.current_token.type)
+    #         right = self.factor()
+    #     self.eat(SEMI)
+    #     return node
+    #
+    # def inc_loop_statement(self):
+    #     node = self.empty()
+    #     token = ""
+    #     if self.current_token.type in [DEC_OP, INC_OP]:
+    #         self.eat(self.current_token.type)
+    #         node = self.variable()
+    #     elif self.current_token.type == ID:
+    #         node = self.variable()
+    #         if self.current_token.type in [INC_OP, DEC_OP]:
+    #             token = self.current_token
+    #         elif self.current_token.type == RPAREN:
+    #
+    #     else:
+    #         node = self.assign_statement()
+    #     return UnaryOp(token, node)
 
     def assign_statement(self):
         left = self.variable()
@@ -223,9 +332,26 @@ class Parser:
         [print_node.children.append(node) for node in result]
         return print_node
 
-
-    def expr(self) -> TernaryOp:
+    def expr(self):
         node = self.ternary_operator()
+        return node
+
+    @buffer
+    def check_assign_statement(self):
+        if self.current_token.type != ID:
+            return False
+        self.eat(self.current_token.type)
+        return self.current_token.type in [ASSIGN, PLUS_ASSIGN, MINUS_ASSIGN, MUL_ASSIGN, DIVIDE_ASSIGN, MOD_ASSIGN, XOR_ASSIGN]
+
+    def expr_statement(self):
+        node = self.empty()
+        if self.current_token.type != SEMI:
+            if self.check_assign_statement():
+                node = self.assign_statement()
+                return node
+            else:
+                node = self.expr()
+        self.eat(SEMI)
         return node
 
     def ternary_operator(self) -> ASTNode:
@@ -234,88 +360,89 @@ class Parser:
             self.eat(QUESTION_MARK)
             expr = self.expr()
             self.eat(COLON)
-            second_expr = self.ternary_operator()
-            return TernaryOp(condition=node, first_expr=expr, second_expr=second_expr)
+            return TernaryOp(condition=node, first_expr=expr, second_expr=self.ternary_operator())
         return node
 
     def logical_or(self):
         node = self.logical_and()
-        if self.current_token.type == LOG_OR:
+        while self.current_token.type == LOG_OR:
             token = self.current_token
             self.eat(token.type)
-            return BinOp(left=node, op=token, right=self.logical_and())
+            node = BinOp(left=node, op=token, right=self.logical_and())
         return node
 
     def logical_and(self):
         node = self.bitwise_or()
-        if self.current_token.type == LOG_AND:
+        while self.current_token.type == LOG_AND:
             token = self.current_token
             self.eat(token.type)
-            return BinOp(left=node, op=token, right=self.bitwise_or())
+            node = BinOp(left=node, op=token, right=self.bitwise_or())
         return node
 
     def bitwise_or(self):
         node = self.bitwise_xor()
-        if self.current_token.type == OR_OP:
+        while self.current_token.type == OR_OP:
             token = self.current_token
             self.eat(token.type)
-            return BinOp(left=node, op=token, right=self.bitwise_xor())
+            node = BinOp(left=node, op=token, right=self.bitwise_xor())
         return node
 
     def bitwise_xor(self):
         node = self.bitwise_and()
-        if self.current_token.type == XOR_OP:
+        while self.current_token.type == XOR_OP:
             token = self.current_token
             self.eat(token.type)
-            return BinOp(left=node, op=token, right=self.bitwise_and())
+            node = BinOp(left=node, op=token, right=self.bitwise_and())
         return node
 
     def bitwise_and(self):
         node = self.equality_ops()
-        if self.current_token.type == XOR_OP:
+        while self.current_token.type == XOR_OP:
             token = self.current_token
             self.eat(token.type)
-            return BinOp(left=node, op=token, right=self.equality_ops())
+            node = BinOp(left=node, op=token, right=self.equality_ops())
         return node
 
     def equality_ops(self):
         node = self.comparison_ops()
-        if self.current_token.type in [EQUAL, NOT_EQUAL]:
+        while self.current_token.type in [EQUAL, NOT_EQUAL]:
             token = self.current_token
             self.eat(token.type)
-            return BinOp(left=node, op=token, right=self.comparison_ops())
+            node = BinOp(left=node, op=token, right=self.comparison_ops())
         return node
 
     def comparison_ops(self):
         node = self.left_right_ops()
-        if self.current_token.type in [EQUAL, NOT_EQUAL]:
+        while self.current_token.type in [EQUAL, NOT_EQUAL]:
             token = self.current_token
             self.eat(token.type)
-            return BinOp(left=node, op=token, right=self.left_right_ops())
+            node = BinOp(left=node, op=token, right=self.left_right_ops())
         return node
 
     def left_right_ops(self):
         node = self.add_sub_ops()
-        if self.current_token.type in [LEFT_OP, RIGHT_OP]:
+        while self.current_token.type in [LEFT_OP, RIGHT_OP]:
             token = self.current_token
             self.eat(token.type)
-            return BinOp(left=node, op=token, right=self.add_sub_ops())
+            node = BinOp(left=node, op=token, right=self.add_sub_ops())
         return node
 
     def add_sub_ops(self):
+        """add_sub_ops             : mul_div_mod_ops ((PLUS | MINUS) mul_div_mod_ops)*"""
         node = self.mul_div_mod_ops()
-        if self.current_token.type in [PLUS, MINUS]:
+        while self.current_token.type in [PLUS, MINUS]:
             token = self.current_token
             self.eat(token.type)
-            return BinOp(left=node, op=token, right=self.mul_div_mod_ops())
+            node = BinOp(left=node, op=token, right=self.mul_div_mod_ops())
         return node
 
     def mul_div_mod_ops(self):
+        """mul_div_mod_ops         : cast_operator ((MUL | DIV | MOD) cast_operator)*"""
         node = self.cast_operator()
-        if self.current_token.type in [ASTERIKS, DIVIDE, MOD]:
+        while self.current_token.type in [ASTERIKS, DIVIDE, MOD]:
             token = self.current_token
             self.eat(token.type)
-            return BinOp(left=node, op=token, right=self.cast_operator())
+            node = BinOp(left=node, op=token, right=self.cast_operator())
         return node
 
     @buffer
@@ -353,10 +480,7 @@ class Parser:
 
     def unary_operator(self) -> ASTNode:
         if self.current_token.type in [INC_OP, DEC_OP]:
-            token = self.current_token
-            self.eat(token.type)
-            expr = self.postfix_operator()
-            return UnaryOp(op=token, expr=expr)
+            return self.prefix_operator_rep()
         elif self.current_token.type in [PLUS, MINUS, LOG_NOT, NOT_OP, AND_OP]:
             token = self.current_token
             self.eat(token.type)
@@ -364,38 +488,49 @@ class Parser:
             return UnaryOp(op=token, expr=expr)
         return self.postfix_operator()
 
-    def postfix_operator(self) -> ASTNode:
-        node = self.factor()
+    def prefix_operator_rep(self) -> ASTNode:
         if self.current_token.type in [INC_OP, DEC_OP]:
             token = self.current_token
             self.eat(token.type)
-            return UnaryOp(op=token, expr=node)
+            expr = self.prefix_operator_rep()
+            return PrefixOp(op=token, expr=expr)
+        else:
+            return self.variable()
+
+    # def postfix_operator_rep(self, var: Variable) -> ASTNode:
+    #     if self.current_token.type in [INC_OP, DEC_OP]:
+    #         token = self.current_token
+    #         self.eat(token.type)
+    #         node = self.postfix_operator_rep(var)
+    #         return PostfixOp(op=token, expr=node)
+    #     else:
+    #         return var
+
+    def postfix_operator(self) -> ASTNode:
+        node = self.factor()
+        if self.current_token.type in [INC_OP, DEC_OP]:
+            if not isinstance(node, Variable):
+                self.error("Left value should be variable")
+            token = self.current_token
+            self.eat(token.type)
+            return PostfixOp(op=token, expr=node)
+            # if self.current_token.type in [INC_OP, DEC_OP]:
+            #     return PostfixOp(op=token, expr=self.postfix_operator_rep(node))
+            # else:
+            #     return PostfixOp(op=token, expr=node)
         return node
 
     def factor(self) -> ASTNode:
         token = self.current_token
-        if token.type == ID:
-            return self.variable()
-        elif token.type == LPAREN:
+        if token.type == LPAREN:
             self.eat(LPAREN)
             expr = self.expr()
             self.eat(RPAREN)
-        else:
+            return expr
+        elif token.type in [INTEGER_CONST, FLOAT_CONST, CHAR_CONST, STRING_CONST, TRUE, FALSE]:
             return self.constant()
-
-    def type_spec(self) -> Type:
-        token = self.current_token
-        if token.type in [INTEGER, FLOAT, DOUBLE, CHAR, STRING, BOOL]:
-            self.eat(token.type)
-            return Type(token)
-
-    def empty(self) -> None:
-        pass
-
-    def variable(self) -> Variable:
-        node = Variable(token=self.current_token)
-        self.eat(ID)
-        return node
+        else:
+            return self.variable()
 
     def constant(self) -> Union[Num, String, Bool]:
         token = self.current_token
@@ -409,10 +544,24 @@ class Parser:
             self.eat(token.type)
             return Bool(token)
 
+    def type_spec(self) -> Type:
+        token = self.current_token
+        if token.type in [INTEGER, FLOAT, DOUBLE, CHAR, STRING, BOOL]:
+            self.eat(token.type)
+            return Type(token)
+
+    def variable(self) -> Variable:
+        node = Variable(token=self.current_token)
+        self.eat(ID)
+        return node
+
+    def empty(self) -> NoOp:
+        return NoOp()
+
     def parse(self) -> ASTNode:
         node = self.program()
         print(node)
         if self.current_token.type != EOF:
-            self.error(errors.NOT_EXPECTED_TOKEN(EOF, self.current_token))
+            self.error(errors.NOT_EXPECTED_TOKEN(EOF, self.current_token.type))
 
         return node

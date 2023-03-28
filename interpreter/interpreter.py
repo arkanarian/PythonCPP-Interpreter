@@ -26,4 +26,3 @@ class Interpreter(NodeVisitor):
         self.visit(node.right)
         self.visit(node.left)
 
-

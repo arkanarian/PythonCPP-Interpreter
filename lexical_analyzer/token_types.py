@@ -8,6 +8,9 @@ INCLUDE_V = "#include"
 NAMESPACE = "NAMESPACE"
 NAMESPACE_V = "namespace"
 
+DEFAULT = "DEFAULT"
+DEFAULT_V = "default"
+
 USING = "USING"
 USING_V = "using"
 
@@ -99,7 +102,7 @@ CASE = "CASE"
 CASE_V = "case"
 
 FOR = "FOR"
-FOR_V = "else"
+FOR_V = "for"
 
 WHILE = "WHILE"
 WHILE_V = "while"

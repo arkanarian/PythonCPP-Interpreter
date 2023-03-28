@@ -23,6 +23,18 @@ class UnaryOp(AST):
         self.expr = expr
 
 
+class PostfixOp(AST):
+    def __init__(self, op: Token, expr: ASTNode):
+        self.token = self.op = op
+        self.expr = expr
+
+
+class PrefixOp(AST):
+    def __init__(self, op: Token, expr: ASTNode):
+        self.token = self.op = op
+        self.expr = expr
+
+
 class Variable(AST):
     """
     value - name of variable
@@ -30,6 +42,13 @@ class Variable(AST):
     def __init__(self, token: Token):
         self.token = token
         self.value = self.token.value
+
+
+class ConditionLoop(AST):
+    def __init__(self, left, token: Token, right):
+        self.left = left
+        self.token = token
+        self.right = right
 
 
 class Num(AST):
@@ -117,3 +136,56 @@ class Program(AST):
         self.declarations_before = declarations_before
         self.main_function = main_function
         self.declarations_after = declarations_after
+
+
+class ConditionStatement(AST):
+    def __init__(self, condition, if_body, else_body):
+        self.condition = condition
+        self.if_body = if_body
+        self.else_body = else_body
+
+
+class ForStatement(AST):
+    def __init__(self, init, condition, action, body):
+        self.init = init
+        self.condition = condition
+        self.action = action
+        self.body = body
+
+
+class WhileStatement(AST):
+    def __init__(self, condition, body):
+        self.condition = condition
+        self.body = body
+
+
+class DoWhileStatement(AST):
+    def __init__(self, condition, body):
+        self.condition = condition
+        self.body = body
+
+
+class BreakStatement(AST):
+    pass
+
+
+class ContinueStatement(AST):
+    pass
+
+
+class ReturnStatement(AST):
+    def __init__(self, expr):
+        self.expr = expr
+
+
+class SwitchCompound(AST):
+    def __init__(self, condition, body):
+        self.condition = condition
+        self.body = body
+
+
+class SwitchStatement(AST):
+    def __init__(self, condition, case_statements, default_statement):
+        self.condition = condition
+        self.case_statements = case_statements
+        self.default_statement = default_statement
